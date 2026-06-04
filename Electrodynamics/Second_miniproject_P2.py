@@ -72,6 +72,52 @@ def A_phi(rho, z, d):
     A = A1 + A2
     return A
 
+def Bz_axis_anti(z, d):
+    return PRE * a**2 * (1/((z - d/2)**2 + a**2)**(3/2) - 1/((z + d/2)**2 + a**2)**(3/2))
+
+def B_field_anti(rho, z, d):
+    rho = np.asarray(rho, dtype=float)
+    z = np.asarray(z, dtype=float)
+    Dp2_1 = (a + rho)**2 + (z + d/2)**2
+    Dm2_1 = (a - rho)**2 + (z + d/2)**2
+    Dp2_2 = (a + rho)**2 + (z - d/2)**2
+    Dm2_2 = (a - rho)**2 + (z - d/2)**2
+    m1 = 4.0 * a * rho /Dp2_1
+    m2 = 4.0 * a * rho /Dp2_2
+    K1 = ellipk(m1)
+    E1 = ellipe(m1)
+    K2 = ellipk(m2)
+    E2 = ellipe(m2)
+
+    Bz_1 = PRE * (1.0/np.sqrt(Dp2_1)) * (K1 + (a**2 - rho**2 - z**2)/Dm2_1 * E1)
+    Bz_2 = PRE * (1.0/np.sqrt(Dp2_2)) * (K2 + (a**2 - rho**2 - z**2)/Dm2_2 * E2)
+    Bz = Bz_1 - Bz_2
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        Brho_1 = PRE * ((z + d/2)/(rho*np.sqrt(Dp2_1))) * (-K1 + (a**2 + rho**2 + (z + d/2)**2)/Dm2_1 * E1)
+        Brho_2 = PRE * ((z - d/2)/(rho*np.sqrt(Dp2_2))) * (-K2 + (a**2 + rho**2 + (z - d/2)**2)/Dm2_2 * E2)
+    Brho_1 = np.where(rho < 1e-9, 0.0, Brho_1)
+    Brho_2 = np.where(rho < 1e-9, 0.0, Brho_2)
+    Brho = Brho_2 - Brho_1
+    return Brho, Bz
+
+def A_phi_anti(rho, z, d):
+    rho = np.asarray(rho, dtype=float)
+    z = np.asarray(z, dtype=float)
+    m1 = elliptic_m1(rho,z,d)
+    m2 = elliptic_m2(rho,z,d)
+    K1 = ellipk(m1)
+    E1 = ellipe(m1)
+    K2 = ellipk(m2)
+    E2 = ellipe(m2)
+    with  np.errstate(divide = 'ignore', invalid='ignore'):
+        A1 = 2*PRE * np.sqrt(a/(rho*m1)) * ((1 - m1/2)*K1 - E1)
+        A2 = 2*PRE * np.sqrt(a/(rho*m2)) * ((1 - m2/2)*K2 - E2)
+    A1 = np.where(rho < 1e-9, 0.0, A1)
+    A2 = np.where(rho < 1e-9, 0.0, A2)
+    A = A2 - A1
+    return A
+
 if __name__ == "__main__":
     d = a  # condicion Helmholtz: d = a
 
@@ -105,11 +151,17 @@ if __name__ == "__main__":
     )
     fig2.colorbar(strm.lines, ax=ax2, label=r'$\ln(1 + |\mathbf{B}|)$')
     for zc in [-d/2, d/2]:
-        ax2.plot(a, zc, 'o', color='cyan', ms=8, label='espira' if zc < 0 else '')
+        ax2.plot(a, zc, 'o', color='none', mec='navy', mew=2.0, ms=18)
+        ax2.plot(a, zc, '.', color='navy', ms=7)
+    from matplotlib.lines import Line2D
+    ax2.legend(
+        handles=[Line2D([0],[0], marker='o', color='none', mec='navy', mew=2,
+                        ms=12, markerfacecolor='navy', label=r'espira ($I$ sale $\odot$)')],
+        loc='upper right',
+    )
     ax2.set_xlabel(r'$\rho/a$')
     ax2.set_ylabel(r'$z/a$')
     ax2.set_title(r'Campo $\mathbf{B}(\rho, z)$ — Bobina de Helmholtz')
-    ax2.legend(loc='upper right')
     fig2.tight_layout()
     fig2.savefig(_fig('B_campo.pdf'), dpi=150)
 
@@ -122,12 +174,80 @@ if __name__ == "__main__":
     ax3.contour(rho_1d, z_1d, flux, levels=20, colors='k', linewidths=0.4, alpha=0.5)
     fig3.colorbar(cf, ax=ax3, label=r'$\rho\,A_\phi$ (u.n.)')
     for zc in [-d/2, d/2]:
-        ax3.plot(a, zc, 'o', color='black', ms=8, label='espira' if zc < 0 else '')
+        ax3.plot(a, zc, 'o', color='white', mec='black', mew=2.0, ms=18)
+        ax3.plot(a, zc, '.', color='black', ms=7)
+    ax3.legend(
+        handles=[Line2D([0],[0], marker='o', color='white', mec='black', mew=2,
+                        ms=12, markerfacecolor='black', label=r'espira ($I$ sale $\odot$)')],
+        loc='upper right',
+    )
     ax3.set_xlabel(r'$\rho/a$')
     ax3.set_ylabel(r'$z/a$')
     ax3.set_title(r'Potencial vectorial $A_\phi(\rho, z)$ — Bobina de Helmholtz')
-    ax3.legend(loc='upper right')
     fig3.tight_layout()
     fig3.savefig(_fig('A_phi.pdf'), dpi=150)
+
+    from matplotlib.lines import Line2D
+
+    # ── Fig 4: Bz sobre el eje z — Anti-Helmholtz ────────────────────────────
+    fig4, ax4 = plt.subplots(figsize=(7.2, 4.6))
+    ax4.plot(z_line, Bz_axis_anti(z_line, d), color='tomato', label=r'$B_z(\rho=0)$')
+    ax4.axvline(-d/2, ls='--', color='gray', lw=0.9)
+    ax4.axvline( d/2, ls='--', color='gray', lw=0.9)
+    ax4.set_xlabel(r'$z/a$')
+    ax4.set_ylabel(r'$B_z$ (u.n.)')
+    ax4.set_title(r'$B_z$ en el eje — Anti-Helmholtz ($d = a$)')
+    ax4.legend()
+    fig4.tight_layout()
+    fig4.savefig(_fig('Bz_eje_anti.pdf'), dpi=150)
+
+    # ── Fig 5: Campo vectorial B — Anti-Helmholtz ─────────────────────────────
+    Brho_a, Bz_a = B_field_anti(RHO, Z, d)
+    Bmag_a = np.hypot(Brho_a, Bz_a)
+
+    fig5, ax5 = plt.subplots(figsize=(7, 5.5))
+    strm5 = ax5.streamplot(
+        rho_1d, z_1d, Brho_a, Bz_a,
+        color=np.log1p(Bmag_a), cmap='inferno',
+        linewidth=1.2, density=1.4, arrowsize=1.2,
+    )
+    fig5.colorbar(strm5.lines, ax=ax5, label=r'$\ln(1 + |\mathbf{B}|)$')
+    # espira z = -d/2: corriente sale (⊙), es la positiva en Bz = Bz_1 - Bz_2
+    ax5.plot(a, -d/2, 'o', color='none', mec='navy', mew=2.0, ms=18)
+    ax5.plot(a, -d/2, '.', color='navy', ms=7)
+    # espira z = +d/2: corriente entra (⊗), es la invertida
+    ax5.plot(a,  d/2, 'o', color='none', mec='tomato', mew=2.0, ms=18)
+    ax5.plot(a,  d/2, 'x', color='tomato', ms=8, mew=2.0)
+    ax5.legend(handles=[
+        Line2D([0],[0], marker='.', color='navy',   ms=9, ls='none', label=r'$\odot$: $I$ sale'),
+        Line2D([0],[0], marker='x', color='tomato', ms=9, mew=2, ls='none', label=r'$\otimes$: $I$ entra'),
+    ], loc='upper right')
+    ax5.set_xlabel(r'$\rho/a$')
+    ax5.set_ylabel(r'$z/a$')
+    ax5.set_title(r'Campo $\mathbf{B}(\rho, z)$ — Anti-Helmholtz')
+    fig5.tight_layout()
+    fig5.savefig(_fig('B_campo_anti.pdf'), dpi=150)
+
+    # ── Fig 6: Potencial vectorial A_phi — Anti-Helmholtz ─────────────────────
+    Aphi_a = A_phi_anti(RHO, Z, d)
+    flux_a  = RHO * Aphi_a
+
+    fig6, ax6 = plt.subplots(figsize=(7, 5.5))
+    cf6 = ax6.contourf(rho_1d, z_1d, flux_a, levels=40, cmap='RdBu_r')
+    ax6.contour(rho_1d, z_1d, flux_a, levels=20, colors='k', linewidths=0.4, alpha=0.5)
+    fig6.colorbar(cf6, ax=ax6, label=r'$\rho\,A_\phi$ (u.n.)')
+    ax6.plot(a, -d/2, 'o', color='white', mec='steelblue', mew=2.0, ms=18)
+    ax6.plot(a, -d/2, '.', color='steelblue', ms=7)
+    ax6.plot(a,  d/2, 'o', color='white', mec='firebrick', mew=2.0, ms=18)
+    ax6.plot(a,  d/2, 'x', color='firebrick', ms=8, mew=2.0)
+    ax6.legend(handles=[
+        Line2D([0],[0], marker='.', color='steelblue', ms=9, ls='none', label=r'$\odot$: $I$ sale'),
+        Line2D([0],[0], marker='x', color='firebrick', ms=9, mew=2, ls='none', label=r'$\otimes$: $I$ entra'),
+    ], loc='upper right')
+    ax6.set_xlabel(r'$\rho/a$')
+    ax6.set_ylabel(r'$z/a$')
+    ax6.set_title(r'Potencial vectorial $A_\phi(\rho, z)$ — Anti-Helmholtz')
+    fig6.tight_layout()
+    fig6.savefig(_fig('A_phi_anti.pdf'), dpi=150)
 
     plt.show()
