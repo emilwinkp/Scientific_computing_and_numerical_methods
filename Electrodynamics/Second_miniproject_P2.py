@@ -1,6 +1,10 @@
-## BOBINA DE HELMHOLTZ Y ANTIHELMHOLTZ 
+"""
+Problema 2: Bobina de Helmholtz y de Anti-Helmholtz.
+Campo magnetico B(rho,z) y potencial vectorial A(rho,z) mediante
+integrales elipticas completas K(m), E(m).
 
-### AUTOR: Emil Winkler Partida 
+Convencion de parametro: SciPy usa ellipk(m), ellipe(m) con m = k^2.
+"""     
 
 import matplotlib
 matplotlib.use('Agg')
@@ -22,6 +26,7 @@ def elliptic_m1(rho, z, d):
     return 4.0 * a * rho / ((a + rho)**2 + (z + d/2)**2)
 
 def elliptic_m2(rho, z, d):
+    """ Parametro m de las funciones elipticas en funcion de rho y z"""
     return 4.0 * a * rho / ((a + rho)**2 + (z - d/2)**2)
 
 def Bz_axis(z, d):
@@ -30,6 +35,8 @@ def Bz_axis(z, d):
 
 ### PRIMERA PARTE - BOBINA DE HELMHOLTZ
 def B_field(rho, z, d):
+    """ Campo magnetico B(rho, z) en coordenadas cilindricas (Brho, Bz) 
+    a través de funciones elipticas de primera y segunda especie."""
     rho = np.asarray(rho, dtype=float)
     z = np.asarray(z, dtype=float)
     Dp2_1 = (a + rho)**2 + (z + d/2)**2
@@ -56,6 +63,8 @@ def B_field(rho, z, d):
     return Brho, Bz
 
 def A_phi(rho, z, d):
+    """ Potencial vectorial A_phi(rho, z) en coordenadas cilindricas
+    a través de funciones elipticas de primera y segunda especie."""
     rho = np.asarray(rho, dtype=float)
     z = np.asarray(z, dtype=float)
     m1 = elliptic_m1(rho,z,d)
@@ -72,10 +81,15 @@ def A_phi(rho, z, d):
     A = A1 + A2
     return A
 
+## SEGUNDA PARTE - BOBINA DE ANTI-HELMHOLTZ (Corrientes opuestas entre espiras)
+
 def Bz_axis_anti(z, d):
+    """ Campo magnetico a lo largo del eje z para la configuracion Anti-Helmholtz, con corrientes opuestas en las espiras"""
     return PRE * a**2 * (1/((z - d/2)**2 + a**2)**(3/2) - 1/((z + d/2)**2 + a**2)**(3/2))
 
 def B_field_anti(rho, z, d):
+    """ Campo magnetico B(rho, z) en coordenadas cilindricas (Brho, Bz)
+    para la configuracion Anti-Helmholtz, con corrientes opuestas en las espiras."""
     rho = np.asarray(rho, dtype=float)
     z = np.asarray(z, dtype=float)
     Dp2_1 = (a + rho)**2 + (z + d/2)**2
@@ -102,6 +116,8 @@ def B_field_anti(rho, z, d):
     return Brho, Bz
 
 def A_phi_anti(rho, z, d):
+    """ Potencial vectorial A_phi(rho, z) en coordenadas cilindricas
+    para la configuracion Anti-Helmholtz, con corrientes opuestas en las espiras."""
     rho = np.asarray(rho, dtype=float)
     z = np.asarray(z, dtype=float)
     m1 = elliptic_m1(rho,z,d)
@@ -121,7 +137,7 @@ def A_phi_anti(rho, z, d):
 if __name__ == "__main__":
     d = a  # condicion Helmholtz: d = a
 
-    # ── Fig 1: Bz sobre el eje z ──────────────────────────────────────────────
+    #  Fig 1: Bz sobre el eje z 
     z_line = np.linspace(-4, 4, 800)
     fig1, ax1 = plt.subplots(figsize=(7.2, 4.6))
     ax1.plot(z_line, Bz_axis(z_line, d), color='steelblue', label=r'$B_z(\rho=0)$')
@@ -134,12 +150,12 @@ if __name__ == "__main__":
     fig1.tight_layout()
     fig1.savefig(_fig('Bz_eje.pdf'), dpi=150)
 
-    # ── Malla 2-D compartida para Fig 2 y Fig 3 ───────────────────────────────
+    #  Malla 2-D compartida para Fig 2 y Fig 3 
     rho_1d = np.linspace(1e-3, 3.0, 80)
     z_1d   = np.linspace(-3.0, 3.0, 80)
     RHO, Z = np.meshgrid(rho_1d, z_1d)
 
-    # ── Fig 2: Campo vectorial B(rho, z) ──────────────────────────────────────
+    #  Fig 2: Campo vectorial B(rho, z) 
     Brho, Bz = B_field(RHO, Z, d)
     Bmag = np.hypot(Brho, Bz)
 
@@ -165,7 +181,7 @@ if __name__ == "__main__":
     fig2.tight_layout()
     fig2.savefig(_fig('B_campo.pdf'), dpi=150)
 
-    # ── Fig 3: Potencial vectorial A_phi(rho, z) ──────────────────────────────
+    # Fig 3: Potencial vectorial A_phi(rho, z)
     Aphi = A_phi(RHO, Z, d)
     flux = RHO * Aphi  # curvas de nivel de rho*A_phi = lineas de campo B
 
@@ -189,7 +205,7 @@ if __name__ == "__main__":
 
     from matplotlib.lines import Line2D
 
-    # ── Fig 4: Bz sobre el eje z — Anti-Helmholtz ────────────────────────────
+    #  Fig 4: Bz sobre el eje z — Anti-Helmholtz 
     fig4, ax4 = plt.subplots(figsize=(7.2, 4.6))
     ax4.plot(z_line, Bz_axis_anti(z_line, d), color='tomato', label=r'$B_z(\rho=0)$')
     ax4.axvline(-d/2, ls='--', color='gray', lw=0.9)
@@ -201,7 +217,7 @@ if __name__ == "__main__":
     fig4.tight_layout()
     fig4.savefig(_fig('Bz_eje_anti.pdf'), dpi=150)
 
-    # ── Fig 5: Campo vectorial B — Anti-Helmholtz ─────────────────────────────
+    # Fig 5: Campo vectorial B — Anti-Helmholtz 
     Brho_a, Bz_a = B_field_anti(RHO, Z, d)
     Bmag_a = np.hypot(Brho_a, Bz_a)
 
@@ -228,7 +244,7 @@ if __name__ == "__main__":
     fig5.tight_layout()
     fig5.savefig(_fig('B_campo_anti.pdf'), dpi=150)
 
-    # ── Fig 6: Potencial vectorial A_phi — Anti-Helmholtz ─────────────────────
+    # Fig 6: Potencial vectorial A_phi — Anti-Helmholtz 
     Aphi_a = A_phi_anti(RHO, Z, d)
     flux_a  = RHO * Aphi_a
 
