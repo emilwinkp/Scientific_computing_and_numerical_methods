@@ -9,6 +9,7 @@ Convencion de parametro: SciPy usa ellipk(m), ellipe(m) con m = k^2.
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import numpy as np 
 import subprocess, os
 
@@ -141,6 +142,7 @@ if __name__ == "__main__":
     z_line = np.linspace(-4, 4, 800)
     fig1, ax1 = plt.subplots(figsize=(7.2, 4.6))
     ax1.plot(z_line, Bz_axis(z_line, d), color='steelblue', label=r'$B_z(\rho=0)$')
+    # Graficamos una referencia de las posiciones de las espiras
     for zc in [-d/2, d/2]:
         ax1.axvline(zc, ls='--', color='gray', lw=0.9, label=f'espira z={zc:+.2f}')
     ax1.set_xlabel(r'$z/a$')
@@ -157,11 +159,13 @@ if __name__ == "__main__":
 
     #  Fig 2: Campo vectorial B(rho, z) 
     Brho, Bz = B_field(RHO, Z, d)
-    Bmag = np.hypot(Brho, Bz)
+    Bmag = np.hypot(Brho, Bz) # magnitud del campo
 
     fig2, ax2 = plt.subplots(figsize=(7, 5.5))
+    # Generamos un campo de lineas para visualizar el campo
     strm = ax2.streamplot(
         rho_1d, z_1d, Brho, Bz,
+        # Utilizamos np.log1p para mejorar la visualizacion y evitar valores cercacanos a cero
         color=np.log1p(Bmag), cmap='inferno',
         linewidth=1.2, density=1.4, arrowsize=1.2,
     )
@@ -169,7 +173,8 @@ if __name__ == "__main__":
     for zc in [-d/2, d/2]:
         ax2.plot(a, zc, 'o', color='none', mec='navy', mew=2.0, ms=18)
         ax2.plot(a, zc, '.', color='navy', ms=7)
-    from matplotlib.lines import Line2D
+
+    # Creamos una leyenda para entender que espira sale u entra. 
     ax2.legend(
         handles=[Line2D([0],[0], marker='o', color='none', mec='navy', mew=2,
                         ms=12, markerfacecolor='navy', label=r'espira ($I$ sale $\odot$)')],
@@ -185,6 +190,7 @@ if __name__ == "__main__":
     Aphi = A_phi(RHO, Z, d)
     flux = RHO * Aphi  # curvas de nivel de rho*A_phi = lineas de campo B
 
+    # Utilizamos contourf para mostrar el potencial y sus curvas de nivel rellenando el espacio.
     fig3, ax3 = plt.subplots(figsize=(7, 5.5))
     cf = ax3.contourf(rho_1d, z_1d, flux, levels=40, cmap='RdBu_r')
     ax3.contour(rho_1d, z_1d, flux, levels=20, colors='k', linewidths=0.4, alpha=0.5)
@@ -203,8 +209,6 @@ if __name__ == "__main__":
     fig3.tight_layout()
     fig3.savefig(_fig('A_phi.pdf'), dpi=150)
 
-    from matplotlib.lines import Line2D
-
     #  Fig 4: Bz sobre el eje z — Anti-Helmholtz 
     fig4, ax4 = plt.subplots(figsize=(7.2, 4.6))
     ax4.plot(z_line, Bz_axis_anti(z_line, d), color='tomato', label=r'$B_z(\rho=0)$')
@@ -219,7 +223,7 @@ if __name__ == "__main__":
 
     # Fig 5: Campo vectorial B — Anti-Helmholtz 
     Brho_a, Bz_a = B_field_anti(RHO, Z, d)
-    Bmag_a = np.hypot(Brho_a, Bz_a)
+    Bmag_a = np.hypot(Brho_a, Bz_a) # magnitud del
 
     fig5, ax5 = plt.subplots(figsize=(7, 5.5))
     strm5 = ax5.streamplot(
