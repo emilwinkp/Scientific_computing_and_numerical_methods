@@ -51,8 +51,8 @@ def B_field(rho, z, d):
     K2 = ellipk(m2)
     E2 = ellipe(m2)
 
-    Bz_1 = PRE * (1.0/np.sqrt(Dp2_1)) * (K1 + (a**2 - rho**2 - z**2)/Dm2_1 * E1)
-    Bz_2 = PRE * (1.0/np.sqrt(Dp2_2)) * (K2 + (a**2 - rho**2 - z**2)/Dm2_2 * E2)
+    Bz_1 = PRE * (1.0/np.sqrt(Dp2_1)) * (K1 + (a**2 - rho**2 - (z + d/2)**2)/Dm2_1 * E1)
+    Bz_2 = PRE * (1.0/np.sqrt(Dp2_2)) * (K2 + (a**2 - rho**2 - (z - d/2)**2)/Dm2_2 * E2)
     Bz = Bz_1 + Bz_2
 
     with np.errstate(divide='ignore', invalid='ignore'):
@@ -104,8 +104,8 @@ def B_field_anti(rho, z, d):
     K2 = ellipk(m2)
     E2 = ellipe(m2)
 
-    Bz_1 = PRE * (1.0/np.sqrt(Dp2_1)) * (K1 + (a**2 - rho**2 - z**2)/Dm2_1 * E1)
-    Bz_2 = PRE * (1.0/np.sqrt(Dp2_2)) * (K2 + (a**2 - rho**2 - z**2)/Dm2_2 * E2)
+    Bz_1 = PRE * (1.0/np.sqrt(Dp2_1)) * (K1 + (a**2 - rho**2 - (z + d/2)**2)/Dm2_1 * E1)
+    Bz_2 = PRE * (1.0/np.sqrt(Dp2_2)) * (K2 + (a**2 - rho**2 - (z - d/2)**2)/Dm2_2 * E2)
     Bz = Bz_1 - Bz_2
 
     with np.errstate(divide='ignore', invalid='ignore'):
