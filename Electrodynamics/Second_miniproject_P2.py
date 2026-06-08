@@ -4,46 +4,46 @@ Campo magnetico B(rho,z) y potencial vectorial A(rho,z) mediante
 integrales elipticas completas K(m), E(m).
 
 Convencion de parametro: SciPy usa ellipk(m), ellipe(m) con m = k^2.
-"""     
+"""
 
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-import numpy as np 
+import numpy as np
 import subprocess, os
 
 _DIR = os.path.dirname(os.path.abspath(__file__))
 def _fig(name): return os.path.join(_DIR, name)
-from scipy.special import ellipk, ellipe  # K(m), E(m)  (parametro m = k^2)
+from scipy.special import ellipk, ellipe  # K(m), E(m) (parametro m = k^2)
 
 # Parametros de normalizacion
 
-a = 1.0 # radio
-PRE = 1.0 # = mu0 I /(2 pi)
+a = 1.0   # radio
+PRE = 1.0/(2.0*np.pi)  # = mu0 I /(2 pi)
 
 def elliptic_m1(rho, z, d):
     """ Parametro m de las funciones elipticas en funcion de rho y z"""
-    return 4.0 * a * rho / ((a + rho)**2 + (z + d/2)**2)
+    return 4.0 * a * rho / ((a + rho)**2 + (z - d/2)**2)
 
 def elliptic_m2(rho, z, d):
     """ Parametro m de las funciones elipticas en funcion de rho y z"""
-    return 4.0 * a * rho / ((a + rho)**2 + (z - d/2)**2)
+    return 4.0 * a * rho / ((a + rho)**2 + (z + d/2)**2)
 
 def Bz_axis(z, d):
     """ Campo magnetico a lo largo del eje z"""
-    return PRE * a**2 * (1/((z - d/2)**2 + a**2)**(3/2)+ 1/((z + d/2)**2 + a**2)**(3/2))
+    return np.pi*PRE * a**2 * (1/((z - d/2)**2 + a**2)**(3/2)+ 1/((z + d/2)**2 + a**2)**(3/2))
 
 ### PRIMERA PARTE - BOBINA DE HELMHOLTZ
 def B_field(rho, z, d):
-    """ Campo magnetico B(rho, z) en coordenadas cilindricas (Brho, Bz) 
-    a través de funciones elipticas de primera y segunda especie."""
+    """ Campo magnetico B(rho, z) en coordenadas cilindricas (Brho, Bz)
+        a trav ́es de funciones elipticas de primera y segunda especie."""
     rho = np.asarray(rho, dtype=float)
     z = np.asarray(z, dtype=float)
-    Dp2_1 = (a + rho)**2 + (z + d/2)**2
-    Dm2_1 = (a - rho)**2 + (z + d/2)**2
-    Dp2_2 = (a + rho)**2 + (z - d/2)**2
-    Dm2_2 = (a - rho)**2 + (z - d/2)**2
+    Dp2_1 = (a + rho)**2 + (z - d/2)**2
+    Dm2_1 = (a - rho)**2 + (z - d/2)**2
+    Dp2_2 = (a + rho)**2 + (z + d/2)**2
+    Dm2_2 = (a - rho)**2 + (z + d/2)**2
     m1 = 4.0 * a * rho /Dp2_1
     m2 = 4.0 * a * rho /Dp2_2
     K1 = ellipk(m1)
@@ -51,13 +51,13 @@ def B_field(rho, z, d):
     K2 = ellipk(m2)
     E2 = ellipe(m2)
 
-    Bz_1 = PRE * (1.0/np.sqrt(Dp2_1)) * (K1 + (a**2 - rho**2 - (z + d/2)**2)/Dm2_1 * E1)
-    Bz_2 = PRE * (1.0/np.sqrt(Dp2_2)) * (K2 + (a**2 - rho**2 - (z - d/2)**2)/Dm2_2 * E2)
+    Bz_1 = PRE * (1.0/np.sqrt(Dp2_1)) * (K1 + (a**2 - rho**2 - (z - d/2)**2)/Dm2_1 * E1)
+    Bz_2 = PRE * (1.0/np.sqrt(Dp2_2)) * (K2 + (a**2 - rho**2 - (z + d/2)**2)/Dm2_2 * E2)
     Bz = Bz_1 + Bz_2
 
     with np.errstate(divide='ignore', invalid='ignore'):
-        Brho_1 = PRE * ((z + d/2)/(rho*np.sqrt(Dp2_1))) * (-K1 + (a**2 + rho**2 + (z + d/2)**2)/Dm2_1 * E1)
-        Brho_2 = PRE * ((z - d/2)/(rho*np.sqrt(Dp2_2))) * (-K2 + (a**2 + rho**2 + (z - d/2)**2)/Dm2_2 * E2)
+        Brho_1 = PRE * ((z - d/2)/(rho*np.sqrt(Dp2_1))) * (-K1 + (a**2 + rho**2 + (z - d/2)**2)/Dm2_1 * E1)
+        Brho_2 = PRE * ((z + d/2)/(rho*np.sqrt(Dp2_2))) * (-K2 + (a**2 + rho**2 + (z + d/2)**2)/Dm2_2 * E2)
     Brho_1 = np.where(rho < 1e-9, 0.0, Brho_1)
     Brho_2 = np.where(rho < 1e-9, 0.0, Brho_2)
     Brho = Brho_1 + Brho_2
@@ -65,7 +65,7 @@ def B_field(rho, z, d):
 
 def A_phi(rho, z, d):
     """ Potencial vectorial A_phi(rho, z) en coordenadas cilindricas
-    a través de funciones elipticas de primera y segunda especie."""
+        a través de funciones elipticas de primera y segunda especie."""
     rho = np.asarray(rho, dtype=float)
     z = np.asarray(z, dtype=float)
     m1 = elliptic_m1(rho,z,d)
@@ -74,7 +74,7 @@ def A_phi(rho, z, d):
     E1 = ellipe(m1)
     K2 = ellipk(m2)
     E2 = ellipe(m2)
-    with  np.errstate(divide = 'ignore', invalid='ignore'):
+    with np.errstate(divide = 'ignore', invalid='ignore'):
         A1 = 2*PRE * np.sqrt(a/(rho*m1)) * ((1 - m1/2)*K1 - E1)
         A2 = 2*PRE * np.sqrt(a/(rho*m2)) * ((1 - m2/2)*K2 - E2)
     A1 = np.where(rho < 1e-9, 0.0, A1)
@@ -86,17 +86,17 @@ def A_phi(rho, z, d):
 
 def Bz_axis_anti(z, d):
     """ Campo magnetico a lo largo del eje z para la configuracion Anti-Helmholtz, con corrientes opuestas en las espiras"""
-    return PRE * a**2 * (1/((z - d/2)**2 + a**2)**(3/2) - 1/((z + d/2)**2 + a**2)**(3/2))
+    return np.pi*PRE * a**2 * (1/((z - d/2)**2 + a**2)**(3/2) - 1/((z + d/2)**2 + a**2)**(3/2))
 
 def B_field_anti(rho, z, d):
     """ Campo magnetico B(rho, z) en coordenadas cilindricas (Brho, Bz)
-    para la configuracion Anti-Helmholtz, con corrientes opuestas en las espiras."""
+        para la configuracion Anti-Helmholtz, con corrientes opuestas en las espiras."""
     rho = np.asarray(rho, dtype=float)
     z = np.asarray(z, dtype=float)
-    Dp2_1 = (a + rho)**2 + (z + d/2)**2
-    Dm2_1 = (a - rho)**2 + (z + d/2)**2
-    Dp2_2 = (a + rho)**2 + (z - d/2)**2
-    Dm2_2 = (a - rho)**2 + (z - d/2)**2
+    Dp2_1 = (a + rho)**2 + (z - d/2)**2
+    Dm2_1 = (a - rho)**2 + (z - d/2)**2
+    Dp2_2 = (a + rho)**2 + (z + d/2)**2
+    Dm2_2 = (a - rho)**2 + (z + d/2)**2
     m1 = 4.0 * a * rho /Dp2_1
     m2 = 4.0 * a * rho /Dp2_2
     K1 = ellipk(m1)
@@ -104,21 +104,21 @@ def B_field_anti(rho, z, d):
     K2 = ellipk(m2)
     E2 = ellipe(m2)
 
-    Bz_1 = PRE * (1.0/np.sqrt(Dp2_1)) * (K1 + (a**2 - rho**2 - (z + d/2)**2)/Dm2_1 * E1)
-    Bz_2 = PRE * (1.0/np.sqrt(Dp2_2)) * (K2 + (a**2 - rho**2 - (z - d/2)**2)/Dm2_2 * E2)
+    Bz_1 = PRE * (1.0/np.sqrt(Dp2_1)) * (K1 + (a**2 - rho**2 - (z - d/2)**2)/Dm2_1 * E1)
+    Bz_2 = PRE * (1.0/np.sqrt(Dp2_2)) * (K2 + (a**2 - rho**2 - (z + d/2)**2)/Dm2_2 * E2)
     Bz = Bz_1 - Bz_2
 
     with np.errstate(divide='ignore', invalid='ignore'):
-        Brho_1 = PRE * ((z + d/2)/(rho*np.sqrt(Dp2_1))) * (-K1 + (a**2 + rho**2 + (z + d/2)**2)/Dm2_1 * E1)
-        Brho_2 = PRE * ((z - d/2)/(rho*np.sqrt(Dp2_2))) * (-K2 + (a**2 + rho**2 + (z - d/2)**2)/Dm2_2 * E2)
+        Brho_1 = PRE * ((z - d/2)/(rho*np.sqrt(Dp2_1))) * (-K1 + (a**2 + rho**2 + (z - d/2)**2)/Dm2_1 * E1)
+        Brho_2 = PRE * ((z + d/2)/(rho*np.sqrt(Dp2_2))) * (-K2 + (a**2 + rho**2 + (z + d/2)**2)/Dm2_2 * E2)
     Brho_1 = np.where(rho < 1e-9, 0.0, Brho_1)
     Brho_2 = np.where(rho < 1e-9, 0.0, Brho_2)
-    Brho = Brho_2 - Brho_1
+    Brho = Brho_1 - Brho_2
     return Brho, Bz
 
 def A_phi_anti(rho, z, d):
     """ Potencial vectorial A_phi(rho, z) en coordenadas cilindricas
-    para la configuracion Anti-Helmholtz, con corrientes opuestas en las espiras."""
+        para la configuracion Anti-Helmholtz, con corrientes opuestas en las espiras."""
     rho = np.asarray(rho, dtype=float)
     z = np.asarray(z, dtype=float)
     m1 = elliptic_m1(rho,z,d)
@@ -127,18 +127,18 @@ def A_phi_anti(rho, z, d):
     E1 = ellipe(m1)
     K2 = ellipk(m2)
     E2 = ellipe(m2)
-    with  np.errstate(divide = 'ignore', invalid='ignore'):
+    with np.errstate(divide = 'ignore', invalid='ignore'):
         A1 = 2*PRE * np.sqrt(a/(rho*m1)) * ((1 - m1/2)*K1 - E1)
         A2 = 2*PRE * np.sqrt(a/(rho*m2)) * ((1 - m2/2)*K2 - E2)
     A1 = np.where(rho < 1e-9, 0.0, A1)
     A2 = np.where(rho < 1e-9, 0.0, A2)
-    A = A2 - A1
+    A = A1 - A2
     return A
 
 if __name__ == "__main__":
     d = a  # condicion Helmholtz: d = a
 
-    #  Fig 1: Bz sobre el eje z 
+    # Fig 1: Bz sobre el eje z
     z_line = np.linspace(-4, 4, 800)
     fig1, ax1 = plt.subplots(figsize=(7.2, 4.6))
     ax1.plot(z_line, Bz_axis(z_line, d), color='steelblue', label=r'$B_z(\rho=0)$')
@@ -174,7 +174,7 @@ if __name__ == "__main__":
         ax2.plot(a, zc, 'o', color='none', mec='navy', mew=2.0, ms=18)
         ax2.plot(a, zc, '.', color='navy', ms=7)
 
-    # Creamos una leyenda para entender que espira sale u entra. 
+    # Creamos una leyenda para saber que espira sale u entra.
     ax2.legend(
         handles=[Line2D([0],[0], marker='o', color='none', mec='navy', mew=2,
                         ms=12, markerfacecolor='navy', label=r'espira ($I$ sale $\odot$)')],
@@ -223,7 +223,7 @@ if __name__ == "__main__":
 
     # Fig 5: Campo vectorial B — Anti-Helmholtz 
     Brho_a, Bz_a = B_field_anti(RHO, Z, d)
-    Bmag_a = np.hypot(Brho_a, Bz_a) # magnitud del
+    Bmag_a = np.hypot(Brho_a, Bz_a)  # magnitud del campo
 
     fig5, ax5 = plt.subplots(figsize=(7, 5.5))
     strm5 = ax5.streamplot(
@@ -232,12 +232,12 @@ if __name__ == "__main__":
         linewidth=1.2, density=1.4, arrowsize=1.2,
     )
     fig5.colorbar(strm5.lines, ax=ax5, label=r'$\ln(1 + |\mathbf{B}|)$')
-    # espira z = -d/2: corriente sale (⊙), es la positiva en Bz = Bz_1 - Bz_2
+    # espira z = -d/2: corriente sale, es la positiva en Bz = Bz_1 - Bz_2
     ax5.plot(a, -d/2, 'o', color='none', mec='navy', mew=2.0, ms=18)
     ax5.plot(a, -d/2, '.', color='navy', ms=7)
-    # espira z = +d/2: corriente entra (⊗), es la invertida
-    ax5.plot(a,  d/2, 'o', color='none', mec='tomato', mew=2.0, ms=18)
-    ax5.plot(a,  d/2, 'x', color='tomato', ms=8, mew=2.0)
+    # espira z = +d/2: corriente entra, es la invertida
+    ax5.plot(a, d/2, 'o', color='none', mec='tomato', mew=2.0, ms=18)
+    ax5.plot(a, d/2, 'x', color='tomato', ms=8, mew=2.0)
     ax5.legend(handles=[
         Line2D([0],[0], marker='.', color='navy',   ms=9, ls='none', label=r'$\odot$: $I$ sale'),
         Line2D([0],[0], marker='x', color='tomato', ms=9, mew=2, ls='none', label=r'$\otimes$: $I$ entra'),
@@ -258,8 +258,8 @@ if __name__ == "__main__":
     fig6.colorbar(cf6, ax=ax6, label=r'$\rho\,A_\phi$ (u.n.)')
     ax6.plot(a, -d/2, 'o', color='white', mec='steelblue', mew=2.0, ms=18)
     ax6.plot(a, -d/2, '.', color='steelblue', ms=7)
-    ax6.plot(a,  d/2, 'o', color='white', mec='firebrick', mew=2.0, ms=18)
-    ax6.plot(a,  d/2, 'x', color='firebrick', ms=8, mew=2.0)
+    ax6.plot(a, d/2, 'o', color='white', mec='firebrick', mew=2.0, ms=18)
+    ax6.plot(a, d/2, 'x', color='firebrick', ms=8, mew=2.0)
     ax6.legend(handles=[
         Line2D([0],[0], marker='.', color='steelblue', ms=9, ls='none', label=r'$\odot$: $I$ sale'),
         Line2D([0],[0], marker='x', color='firebrick', ms=9, mew=2, ls='none', label=r'$\otimes$: $I$ entra'),
